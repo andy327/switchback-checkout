@@ -8,7 +8,7 @@ ThisBuild / scalaVersion := "2.13.18"
 
 ThisBuild / scalacOptions ++= Seq(
   "-deprecation",
-  "-Wunused",        // For RemoveUnused rule
+  "-Wunused", // For RemoveUnused rule
   "-Wunused:imports" // For OrganizeImports.removeUnused = true
 )
 
