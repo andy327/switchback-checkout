@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    name: Lint, format, and test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+
+      - name: Set up JDK 17 (Temurin)
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: sbt
+
+      - name: Install SBT (via Coursier)
+        uses: coursier/setup-action@v3
+        with:
+          apps: sbt
+
+      - name: Cache Ivy2 and Coursier
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.cache/coursier
+            ~/.sbt
+          key: sbt-${{ runner.os }}-${{ hashFiles('**/build.sbt', '**/project/*.sbt', '**/project/build.properties') }}
+          restore-keys: |
+            sbt-${{ runner.os }}-
+
+      - name: Run CI (lint, format, test with coverage)
+        # The integration specs (Testcontainers Kafka) need a Docker daemon, which is available on
+        # ubuntu-latest runners.
+        run: sbt ci
