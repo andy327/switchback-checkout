@@ -4,26 +4,26 @@
 [![Scala](https://img.shields.io/badge/Scala-2.13-red?logo=scala&logoColor=red)](https://www.scala-lang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-A Scala microservices system that implements an e-commerce checkout across five services. It uses synchronous REST calls between services for the steps an order can't proceed without, and asynchronous Kafka events for the work that can happen independently — switching between the two depending on what each step needs.
+A Scala microservices system that implements an e-commerce checkout across five services. It uses synchronous REST calls between services for the steps an order can't proceed without, and asynchronous Kafka events for the work that can happen independently - switching between the two depending on what each step needs.
 
 ## Communication model
 
 A checkout request involves two kinds of interaction, handled differently:
 
-- **Synchronous REST** for the steps the order can't proceed without. order-service can't confirm an order until stock is reserved and the card is charged, and a failed charge has to be undone before it can answer the client — so reserving stock and charging payment are direct REST calls that block until they return.
+- **Synchronous REST** for the steps the order can't proceed without. order-service can't confirm an order until stock is reserved and the card is charged, and a failed charge has to be undone before it can answer the client - so reserving stock and charging payment are direct REST calls that block until they return.
 - **Asynchronous Kafka events** for the work that doesn't hold up the response. Sending a confirmation and recording an audit entry have no bearing on whether the order succeeds, so order-service publishes an event and returns immediately; other services consume it on their own schedule and can lag, retry, or restart without affecting the checkout.
 
 ## Services
 
-- **order-service** — the entry point and coordinator. Exposes `POST /orders`, calls inventory and payment in sequence, issues the compensating stock release if payment fails, decides the final order outcome, and publishes checkout events to Kafka. It is the only service that calls the others.
-- **inventory-service** — a REST service that reserves and releases stock. `reserve` fails when a SKU can't cover the requested quantity; `release` (used to undo a reservation) is idempotent, so it can be safely retried.
-- **payment-service** — a REST service that charges and refunds payments. Includes a deterministic decline rule so the payment-failure path can be reproduced on demand.
-- **notification-service** — consumes checkout events from Kafka and sends order confirmations and failure notices. It has no REST interface.
-- **audit-log-service** — consumes the same events and appends every one to an ordered, immutable log. It runs independently of notification-service, under its own consumer group.
+- **order-service** - the entry point and coordinator. Exposes `POST /orders`, calls inventory and payment in sequence, issues the compensating stock release if payment fails, decides the final order outcome, and publishes checkout events to Kafka. It is the only service that calls the others.
+- **inventory-service** - a REST service that reserves and releases stock. `reserve` fails when a SKU can't cover the requested quantity; `release` (used to undo a reservation) is idempotent, so it can be safely retried.
+- **payment-service** - a REST service that charges and refunds payments. Includes a deterministic decline rule so the payment-failure path can be reproduced on demand.
+- **notification-service** - consumes checkout events from Kafka and sends order confirmations and failure notices. It has no REST interface.
+- **audit-log-service** - consumes the same events and appends every one to an ordered, immutable log. It runs independently of notification-service, under its own consumer group.
 
 ## The checkout flow
 
-**Happy path** — `POST /orders`:
+**Happy path** - `POST /orders`:
 
 1. order-service calls inventory-service `reserve` (sync REST) and waits.
 2. order-service calls payment-service `charge` (sync REST) and waits.
@@ -31,7 +31,7 @@ A checkout request involves two kinds of interaction, handled differently:
 4. order-service returns `201 Confirmed` to the client.
 5. notification-service and audit-log-service consume the events asynchronously, each at its own pace. If either is down, the customer already has their answer.
 
-**Payment failure** — a declined charge triggers compensation:
+**Payment failure** - a declined charge triggers compensation:
 
 1. `reserve` succeeds (sync REST).
 2. `charge` returns `402` (sync REST).
@@ -47,15 +47,15 @@ In the diagram, **solid** arrows are synchronous REST calls (the caller waits fo
 flowchart TD
     client([Client])
 
-    subgraph sync["Synchronous — REST"]
+    subgraph sync["Synchronous - REST"]
         order["order-service<br/><i>coordinator · REST · event producer</i>"]
         inventory["inventory-service<br/><i>reserve / release stock</i>"]
         payment["payment-service<br/><i>charge / refund</i>"]
     end
 
-    kafka{{"Kafka — topic: checkout.events"}}
+    kafka{{"Kafka - topic: checkout.events"}}
 
-    subgraph async["Asynchronous — Kafka consumers"]
+    subgraph async["Asynchronous - Kafka consumers"]
         notification["notification-service<br/><i>confirmations & failure notices</i>"]
         audit["audit-log-service<br/><i>immutable event log</i>"]
     end
@@ -70,9 +70,9 @@ flowchart TD
 ```
 
 - **order-service** owns the flow. It is the only service that talks to the others; the two REST services and the two consumers never call each other.
-- Because order-service depends on inventory and payment being responsive, its calls to them retry briefly on transient errors and, if a service keeps failing, stop calling it and fail fast for a short cooldown — so one struggling dependency doesn't leave every checkout hanging on a timeout.
+- Because order-service depends on inventory and payment being responsive, its calls to them retry briefly on transient errors and, if a service keeps failing, stop calling it and fail fast for a short cooldown - so one struggling dependency doesn't leave every checkout hanging on a timeout.
 - **Kafka** carries the full checkout event stream on a single topic. Both consumers subscribe independently under their own consumer groups; neither is aware of the other.
-- Each service keeps its own state in memory (the audit log is append-only). There is no shared datastore, and no service reaches into another's state — they interact only through the REST calls and events above.
+- Each service keeps its own state in memory (the audit log is append-only). There is no shared datastore, and no service reaches into another's state - they interact only through the REST calls and events above.
 
 ## Tech stack
 
@@ -93,14 +93,14 @@ Each REST endpoint is defined once with Tapir and used to generate both the serv
 ## Project structure
 
 ```
-common/                 — shared domain model, Circe codecs, checkout event schema,
+common/                 - shared domain model, Circe codecs, checkout event schema,
                           Kafka topic names, and the Tapir endpoint definitions
-order-service/          — coordinator: REST entry point, REST clients, Kafka producer
-inventory-service/      — REST: reserve / release stock
-payment-service/        — REST: charge / refund (with a deterministic decline rule)
-notification-service/   — Kafka consumer: confirmations and failure notices
-audit-log-service/      — Kafka consumer: appends every event to an immutable log
-docker/                 — Docker Compose (Kafka + Zookeeper)
+order-service/          - coordinator: REST entry point, REST clients, Kafka producer
+inventory-service/      - REST: reserve / release stock
+payment-service/        - REST: charge / refund (with a deterministic decline rule)
+notification-service/   - Kafka consumer: confirmations and failure notices
+audit-log-service/      - Kafka consumer: appends every event to an immutable log
+docker/                 - Docker Compose (Kafka + Zookeeper)
 ```
 
 ## Running locally

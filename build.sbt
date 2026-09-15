@@ -123,7 +123,7 @@ lazy val serviceAssembly = assembly / assemblyMergeStrategy := {
 }
 
 // ---------------------------------------------------------------------------
-// common — the shared contract: domain model, JSON codecs, Kafka topics/events,
+// common - the shared contract: domain model, JSON codecs, Kafka topics/events,
 // and the Tapir endpoint definitions that both servers and clients derive from.
 // ---------------------------------------------------------------------------
 lazy val common = project
@@ -136,8 +136,8 @@ lazy val common = project
   )
 
 // ---------------------------------------------------------------------------
-// order-service — the orchestrator: REST entry point, synchronous sttp clients
-// to inventory + payment (with retries + circuit breaker), and the Kafka producer.
+// order-service - the orchestrator: REST entry point, synchronous sttp clients
+// to inventory + payment (with retries + a fail-fast guard), and the Kafka producer.
 // ---------------------------------------------------------------------------
 lazy val order = project
   .in(file("order-service"))
@@ -153,7 +153,7 @@ lazy val order = project
   )
 
 // ---------------------------------------------------------------------------
-// inventory-service — REST: reserve / release stock against an in-memory store.
+// inventory-service - REST: reserve / release stock against an in-memory store.
 // ---------------------------------------------------------------------------
 lazy val inventory = project
   .in(file("inventory-service"))
@@ -168,7 +168,7 @@ lazy val inventory = project
   )
 
 // ---------------------------------------------------------------------------
-// payment-service — REST: charge / refund against an in-memory ledger.
+// payment-service - REST: charge / refund against an in-memory ledger.
 // ---------------------------------------------------------------------------
 lazy val payment = project
   .in(file("payment-service"))
@@ -183,7 +183,7 @@ lazy val payment = project
   )
 
 // ---------------------------------------------------------------------------
-// notification-service — pure Kafka consumer (no REST): sends confirmations.
+// notification-service - pure Kafka consumer (no REST): sends confirmations.
 // ---------------------------------------------------------------------------
 lazy val notification = project
   .in(file("notification-service"))
@@ -199,7 +199,7 @@ lazy val notification = project
   )
 
 // ---------------------------------------------------------------------------
-// audit-log-service — pure Kafka consumer (no REST): appends an immutable event log.
+// audit-log-service - pure Kafka consumer (no REST): appends an immutable event log.
 // ---------------------------------------------------------------------------
 lazy val auditLog = project
   .in(file("audit-log-service"))
