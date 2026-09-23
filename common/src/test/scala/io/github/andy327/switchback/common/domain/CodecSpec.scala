@@ -7,11 +7,12 @@ import io.circe.syntax._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-/** Round-trip checks for the sealed ADTs whose derived JSON is a wire contract between separately-deployed services.
+/** Round-trip checks for the JSON that is a wire contract between separately-deployed services.
   *
-  * The plain product DTOs are left to be exercised by the service and route tests; these two ADTs earn a dedicated
-  * check because their encoding is a discriminated union keyed on the case name, so a rename or codec tweak can change
-  * the on-the-wire shape and silently break a consumer.
+  * [[CheckoutEvent]] earns a dedicated check because its encoding is a discriminated union keyed on the case name, so a
+  * rename or codec tweak can change the on-the-wire shape and silently break a consumer. The [[CheckoutError]] variants
+  * each carry their own codec (the HTTP status is the discriminator at the REST edge), so they are round-tripped
+  * individually. The plain product DTOs are left to be exercised by the service and route tests.
   */
 class CodecSpec extends AnyWordSpec with Matchers {
 
@@ -37,14 +38,11 @@ class CodecSpec extends AnyWordSpec with Matchers {
   }
 
   "CheckoutError JSON" should {
-    "round-trip every variant" in {
-      val errors: List[CheckoutError] = List(
-        CheckoutError.OutOfStock("widget out of stock"),
-        CheckoutError.PaymentDeclined("card declined"),
-        CheckoutError.NotFound("no such reservation"),
-        CheckoutError.Unavailable("payment-service timed out")
-      )
-      errors.foreach(roundTrip[CheckoutError])
+    "round-trip each variant on its own codec" in {
+      roundTrip(CheckoutError.OutOfStock("widget out of stock"))
+      roundTrip(CheckoutError.PaymentDeclined("card declined"))
+      roundTrip(CheckoutError.NotFound("no such reservation"))
+      roundTrip(CheckoutError.Unavailable("payment-service timed out"))
     }
   }
 }

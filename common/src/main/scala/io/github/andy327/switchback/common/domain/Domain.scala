@@ -80,19 +80,32 @@ object RefundRequest {
   implicit val codec: Codec[RefundRequest] = deriveCodec
 }
 
-/** The error vocabulary shared across services.
+/** The error case classes shared across services.
   *
-  * Each maps to a specific HTTP status at the REST edge so callers can branch on a typed failure
-  * rather than a bare status code.
+  * Each variant maps to a distinct HTTP status at the REST edge, so a caller branches on a typed failure rather than a
+  * bare status code. The mapping lives in [[io.github.andy327.switchback.common.Endpoints]].
   */
 sealed trait CheckoutError {
   def message: String
 }
 object CheckoutError {
   final case class OutOfStock(message: String) extends CheckoutError
-  final case class PaymentDeclined(message: String) extends CheckoutError
-  final case class NotFound(message: String) extends CheckoutError
-  final case class Unavailable(message: String) extends CheckoutError
+  object OutOfStock {
+    implicit val codec: Codec[OutOfStock] = deriveCodec
+  }
 
-  implicit val codec: Codec[CheckoutError] = deriveCodec
+  final case class PaymentDeclined(message: String) extends CheckoutError
+  object PaymentDeclined {
+    implicit val codec: Codec[PaymentDeclined] = deriveCodec
+  }
+
+  final case class NotFound(message: String) extends CheckoutError
+  object NotFound {
+    implicit val codec: Codec[NotFound] = deriveCodec
+  }
+
+  final case class Unavailable(message: String) extends CheckoutError
+  object Unavailable {
+    implicit val codec: Codec[Unavailable] = deriveCodec
+  }
 }
